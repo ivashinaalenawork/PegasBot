@@ -4,7 +4,7 @@
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
-    "scrape": "node scrape.js",
+    "survey": "node survey.js",
     "telegram": "node telegram-local.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },

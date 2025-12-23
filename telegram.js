@@ -92,7 +92,7 @@ bot.onText(/\/parse/, async (msg) => {
 
   try {
     // Запускаем скрипт парсинга
-    exec("node scrape.js", (error, stdout, stderr) => {
+    exec("node survey.js", (error, stdout, stderr) => {
       if (error) {
         console.error("❌ Ошибка парсинга:", error);
         bot.sendMessage(
