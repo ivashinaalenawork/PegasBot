@@ -34,14 +34,17 @@ const config = {
 async function findCurrency() {
   let browser;
   try {
-    browser = await chromium.launch({ headless: false }); //заупск браузера
+    browser = await chromium.launch({
+      headless: true,
+      args: ["--no-sandbox", "--disable-setuid-sandbox"],
+    }); //заупск браузера
     const page = await browser.newPage(); //созд-е новой вкладки
     await page.goto("https://pegast.ru/", {
       waitUntil: "networkidle",
       timeout: 60000,
     });
     const selector = ".exchange__rate"; //поиск по селктору
-    await page.waitForSelector(selector, { timeout: 20000 });
+    await page.waitForSelector(selector, { timeout: 30000, state: "visible" });
     const currentText = await page.textContent(selector); //получение контента селектора
     console.log(`Курс: ${currentText}`);
 
