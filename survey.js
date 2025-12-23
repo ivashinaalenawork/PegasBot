@@ -35,7 +35,7 @@ async function findCurrency() {
   let browser;
   try {
     browser = await chromium.launch({
-      headless: true,
+      headless: false,
       args: ["--no-sandbox", "--disable-setuid-sandbox"],
     }); //заупск браузера
     const page = await browser.newPage(); //созд-е новой вкладки
