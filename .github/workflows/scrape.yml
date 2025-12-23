@@ -1,9 +1,12 @@
-name: Currency Scraping
+name: Currency Scrape
 
 on:
   workflow_dispatch:
   schedule:
     - cron: "0 6 * * *"
+
+repository_dispatch:
+  types: [run-parser]
 
 jobs:
   scrape:
@@ -25,8 +28,7 @@ jobs:
       - name: Run scraper
         env:
           GOOGLE_PRIVATE_KEY: ${{ secrets.GOOGLE_PRIVATE_KEY }}
-          GOOGLE_SERVICE_ACCOUNT_EMAIL: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_EMAIL }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-          SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
+
         run: node survey.js

@@ -34,7 +34,7 @@ const config = {
 async function findCurrency() {
   let browser;
   try {
-    browser = await chromium.launch({ headless: true }); //заупск браузера
+    browser = await chromium.launch({ headless: false }); //заупск браузера
     const page = await browser.newPage(); //созд-е новой вкладки
     await page.goto("https://pegast.ru/", {
       waitUntil: "networkidle",
@@ -56,6 +56,8 @@ async function findCurrency() {
   } catch (error) {
     console.error(error);
     return { success: false, error: error.message };
+  } finally {
+    await browser?.close();
   }
 }
 
@@ -98,7 +100,29 @@ async function sendTelegramNotification(message) {
   }
 }
 
+module.exports = async (req, res) => {
+  //запуск из гитхаб actions
+  try {
+    console.log("Запуск парсинга по запросу от GitHub Actions...");
+    const result = await findCurrency();
+
+    if (result.success) {
+      console.log("Парсинг успешен:", result.data);
+      res.status(200).json({ message: "Курс обновлен", data: result.data });
+    } else {
+      console.error("Ошибка парсинга:", result.error);
+      res
+        .status(500)
+        .json({ error: "Ошибка при парсинге", details: result.error });
+    }
+  } catch (error) {
+    console.error("Критическая ошибка:", error);
+    res.status(500).json({ error: "Внутренняя ошибка сервера" });
+  }
+};
+
 if (require.main === module) {
+  //запуск из командной строки
   findCurrency().then((result) => {
     process.exit(result.success ? 0 : 1);
   });
