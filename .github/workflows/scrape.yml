@@ -2,11 +2,12 @@ name: Currency Scrape
 
 on:
   workflow_dispatch:
+
   schedule:
     - cron: "0 6 * * *"
 
-repository_dispatch:
-  types: [run-parser]
+  repository_dispatch:
+    types: [run-parser]
 
 jobs:
   scrape:
