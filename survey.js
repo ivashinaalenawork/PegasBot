@@ -34,7 +34,7 @@ const config = {
 async function findCurrency() {
   let browser;
   try {
-    browser = await chromium.launch({ headless: false }); //заупск браузера
+    browser = await chromium.launch({ headless: true }); //заупск браузера
     const page = await browser.newPage(); //созд-е новой вкладки
     await page.goto("https://pegast.ru/", {
       waitUntil: "networkidle",
