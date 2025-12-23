@@ -56,8 +56,6 @@ async function findCurrency() {
   } catch (error) {
     console.error(error);
     return { success: false, error: error.message };
-  } finally {
-    await browser.close();
   }
 }
 
