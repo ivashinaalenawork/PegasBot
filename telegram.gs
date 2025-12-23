@@ -1,30 +1,4 @@
-//const CONFIG = {
-//   TELEGRAM_BOT_TOKEN: "8578454872:AAGgCs6T1P5sZAuZh82JfQ52tqyyal3W5AA",
-//   REPO_OWNER: "ivashinaalenawork",
-//   REPO_NAME: "PegasBot",
-//   GOOGLE_SHEET_ID: "1_eWXwpus15aBRquTf5PNhzDK1HwJA8Zp21xJH7kYFPw",
-//   WEBHOOK_SECRET: "my_telegram_bot_pegas_2025_key",
-// };
-
-const CONFIG = {
-  TELEGRAM_BOT_TOKEN: "8578454872:AAGgCs6T1P5sZAuZh82JfQ52tqyyal3W5AA",
-  GITHUB_TOKEN: "YOUR_GITHUB_PERSONAL_ACCESS_TOKEN",
-  GITHUB_REPO: "ivashinaalenawork/PegasBot",
-};
-
-function setConfig() {
-  const props = PropertiesService.getScriptProperties();
-
-  props.setProperty("GITHUB_TOKEN", "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");
-  props.setProperty(
-    "TELEGRAM_BOT_TOKEN",
-    "8578454872:AAGgCs6T1P5sZAuZh82JfQ52tqyyal3W5AA"
-  );
-}
-
-function getGitHubToken() {
-  return PropertiesService.getScriptProperties().getProperty("GITHUB_TOKEN");
-}
+const CONFIG = require("./config");
 
 function doPost(e) {
   try {
@@ -86,7 +60,7 @@ function triggerGitHubWorkflow() {
   const options = {
     method: "post",
     headers: {
-      Authorization: "token " + getGitHubToken(),
+      Authorization: "token " + CONFIG.GITHUB_TOKEN,
       Accept: "application/vnd.github.v3+json",
       "Content-Type": "application/json",
     },
