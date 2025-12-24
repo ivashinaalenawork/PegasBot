@@ -30,6 +30,7 @@ const config = {
     chatId: "1283692738",
   },
 };
+const groupChatId = "";
 function formatDate(date) {
   const day = String(date.getDate()).padStart(2, "0");
   const month = String(date.getMonth() + 1).padStart(2, "0");
@@ -120,9 +121,10 @@ async function findCurrency() {
       const sign = delta >= 0 ? "+" : "";
       message += `\nдинамика:${sign}${percent}%`;
     }
-
+    const groupChatId = "-5017405005";
     // Отправляем уведомление в Telegram
-    await sendTelegramNotification(message);
+    await sendTelegramNotification(message, config.telegram.chatId);
+    await sendTelegramNotification(message, groupChatId);
     return { success: true, data: { value: currency } };
   } catch (error) {
     console.error(error);
@@ -153,12 +155,12 @@ async function writeToGoogleSheets(date, currency) {
   }
 }
 
-async function sendTelegramNotification(message) {
+async function sendTelegramNotification(message, chatId = null) {
   try {
     const url = `https://api.telegram.org/bot${config.telegram.botToken}/sendMessage`;
-
+    const targetChatId = chatId || config.telegram.chatId;
     await axios.post(url, {
-      chat_id: config.telegram.chatId,
+      chat_id: targetChatId,
       text: message,
       parse_mode: "HTML",
     });
