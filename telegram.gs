@@ -1,27 +1,25 @@
-const CONFIG = require("./config");
+const CONFIG = require("./config.js");
+const axios = require("axios");
 
-function doPost(e) {
+async function handleUpdate(update) {
   try {
-    const update = JSON.parse(e.postData.contents);
-
     if (update.message && update.message.text) {
       const chatId = update.message.chat.id;
       const text = update.message.text.trim();
 
       if (text === "/get") {
-        // 1. Немедленно отвечаем пользователю
-        sendTelegramMessage(chatId, "Запрашиваю актуальный курс...");
+        await sendTelegramMessage(chatId, "Запрашиваю актуальный курс...");
 
         // 2. Запускаем GitHub Actions workflow
-        const triggerResult = triggerGitHubWorkflow();
+        const triggerResult = await triggerGitHubWorkflow();
 
         if (triggerResult) {
-          sendTelegramMessage(
+          await sendTelegramMessage(
             chatId,
-            "Запрос на обновление отправлен. Ожидайте"
+            "Запрос на обновление отправлен. Ожидайте..."
           );
         } else {
-          sendTelegramMessage(
+          await sendTelegramMessage(
             chatId,
             "Не удалось запустить обновление. Попробуйте позже."
           );
@@ -29,50 +27,82 @@ function doPost(e) {
       }
     }
   } catch (error) {
-    console.error(error);
+    console.error("Ошибка:", error);
   }
 }
 
-function sendTelegramMessage(chatId, text) {
-  const url =
-    "https://api.telegram.org/bot" + CONFIG.TELEGRAM_BOT_TOKEN + "/sendMessage";
-  const payload = {
-    chat_id: chatId,
-    text: text,
-  };
-  const options = {
-    method: "post",
-    contentType: "application/json",
-    payload: JSON.stringify(payload),
-  };
-
-  UrlFetchApp.fetch(url, options);
-}
-
-function triggerGitHubWorkflow() {
-  const url =
-    "https://api.github.com/repos/" + CONFIG.GITHUB_REPO + "/dispatches";
-
-  const payload = {
-    event_type: "run-parser",
-  };
-
-  const options = {
-    method: "post",
-    headers: {
-      Authorization: "token " + CONFIG.GITHUB_TOKEN,
-      Accept: "application/vnd.github.v3+json",
-      "Content-Type": "application/json",
-    },
-    payload: JSON.stringify(payload),
-  };
-
+async function sendTelegramMessage(chatId, text) {
   try {
-    const response = UrlFetchApp.fetch(url, options);
-    console.log("GitHub API ответ:", response.getResponseCode());
+    const url = `https://api.telegram.org/bot${CONFIG.TELEGRAM_BOT_TOKEN}/sendMessage`;
+
+    await axios.post(url, {
+      chat_id: chatId,
+      text: text,
+    });
+
+    console.log(`Сообщение отправлено в чат ${chatId}: ${text}`);
     return true;
   } catch (error) {
-    console.error(error);
+    console.error("Ошибка отправки сообщения в Telegram:", error);
     return false;
   }
+}
+
+async function triggerGitHubWorkflow() {
+  try {
+    const url = `https://api.github.com/repos/${CONFIG.GITHUB_REPO}/dispatches`;
+
+    const response = await axios.post(
+      url,
+      {
+        event_type: "run-parser",
+      },
+      {
+        headers: {
+          Authorization: `token ${CONFIG.GITHUB_TOKEN}`,
+          Accept: "application/vnd.github.v3+json",
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    console.log("GitHub API ответ:", response.status);
+    return true;
+  } catch (error) {
+    console.error(
+      "Ошибка при запуске GitHub Actions:",
+      error.response?.data || error.message
+    );
+    return false;
+  }
+}
+
+// Для вебхука Telegram
+module.exports = async (req, res) => {
+  try {
+    const update = req.body;
+    console.log("Получен update от Telegram:", JSON.stringify(update, null, 2));
+
+    await handleUpdate(update);
+
+    res.status(200).send("OK");
+  } catch (error) {
+    console.error("Ошибка обработки вебхука:", error);
+    res.status(500).send("Internal Server Error");
+  }
+};
+
+// Для тестирования вручную
+if (require.main === module) {
+  const testUpdate = {
+    message: {
+      chat: { id: CONFIG.TELEGRAM_CHAT_ID },
+      text: "/get",
+    },
+  };
+
+  handleUpdate(testUpdate).then(() => {
+    console.log("Тест завершен");
+    process.exit(0);
+  });
 }

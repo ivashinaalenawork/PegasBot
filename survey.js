@@ -30,6 +30,38 @@ const config = {
     chatId: "1283692738",
   },
 };
+function formatDate(date) {
+  const day = String(date.getDate()).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const year = date.getFullYear();
+  return `${day}.${month}.${year}`;
+}
+async function getLastValueFromSheets() {
+  try {
+    const auth = new google.auth.JWT({
+      email: config.googleSheets.clientEmail,
+      key: config.googleSheets.privateKey,
+      scopes: ["https://www.googleapis.com/auth/spreadsheets"],
+    });
+    const sheets = google.sheets({ version: "v4", auth });
+    const response = await sheets.spreadsheets.values.get({
+      spreadsheetId: config.googleSheets.sheetId,
+      range: "Лист1",
+    });
+    const rows = response.data.values;
+    if (!rows || rows.length < 2) {
+      return null;
+    }
+    const lastRow = rows[rows.length - 2];
+    if (lastRow[1]) {
+      return lastRow[1];
+    }
+    return null;
+  } catch (error) {
+    console.error("Ошибка:", error);
+    return null;
+  }
+}
 
 async function getPegasUsdRate() {
   const url = "https://tulatours.ru/touroperators-currency-rate/";
@@ -73,14 +105,24 @@ async function getPegasUsdRate() {
 
 async function findCurrency() {
   try {
+    const today = new Date();
     const currency = await getPegasUsdRate();
 
     await writeToGoogleSheets(new Date(), currency);
 
+    const previousValue = await getLastValueFromSheets();
+
+    let message = `...\n${formatDate(today)}: курс ${currency}`;
+
+    if (previousValue) {
+      const delta = currency - previousValue;
+      const percent = ((delta / previousValue) * 100).toFixed(2);
+      const sign = delta >= 0 ? "+" : "";
+      message += `\nдинамика:${sign}${percent}%`;
+    }
+
     // Отправляем уведомление в Telegram
-    await sendTelegramNotification(
-      `Данные обновлены\n📅 ${new Date()}\n Курс USD ${currency}`
-    );
+    await sendTelegramNotification(message);
     return { success: true, data: { value: currency } };
   } catch (error) {
     console.error(error);
