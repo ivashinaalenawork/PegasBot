@@ -8,9 +8,6 @@ async function handleUpdate(update) {
       const text = update.message.text.trim();
 
       if (text === "/get") {
-        await sendTelegramMessage(chatId, "Запрашиваю актуальный курс...");
-
-        // 2. Запускаем GitHub Actions workflow
         const triggerResult = await triggerGitHubWorkflow();
 
         if (triggerResult) {
