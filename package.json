@@ -4,16 +4,13 @@
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
-    "survey": "node survey.js",
-    "telegram": "node telegram-local.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "survey": "node survey.js"
   },
   "dependencies": {
-    "playwright": "^1.57.0",
-    "googleapis": "^144.0.0",
     "axios": "^1.7.9",
+    "cheerio": "^1.1.2",
     "dotenv": "^16.4.7",
-    "node-telegram-bot-api": "^0.61.0"
+    "googleapis": "^144.0.0"
   },
   "keywords": [],
   "author": "",

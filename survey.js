@@ -1,6 +1,6 @@
-const { chromium } = require("playwright");
 const { google } = require("googleapis");
 const axios = require("axios");
+const cheerio = require("cheerio");
 require("dotenv").config();
 
 const logs = {
@@ -31,36 +31,60 @@ const config = {
   },
 };
 
-async function findCurrency() {
-  let browser;
-  try {
-    browser = await chromium.launch({
-      headless: false,
-      args: ["--no-sandbox", "--disable-setuid-sandbox"],
-    }); //заупск браузера
-    const page = await browser.newPage(); //созд-е новой вкладки
-    await page.goto("https://pegast.ru/", {
-      waitUntil: "networkidle",
-      timeout: 60000,
-    });
-    const selector = ".exchange__rate"; //поиск по селктору
-    await page.waitForSelector(selector, { timeout: 30000, state: "visible" });
-    const currentText = await page.textContent(selector); //получение контента селектора
-    console.log(`Курс: ${currentText}`);
+async function getPegasUsdRate() {
+  const url = "https://tulatours.ru/touroperators-currency-rate/";
 
-    await writeToGoogleSheets(new Date(), currentText);
+  try {
+    // Добавляем User-Agent, чтобы сайт думал, что мы обычный браузер
+    const response = await axios.get(url, {
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36",
+      },
+    });
+
+    const $ = cheerio.load(response.data);
+    let usdRate = "Не найдено";
+
+    // Перебираем все блоки с классом currency-item
+    $(".currency-item").each((i, el) => {
+      const containerText = $(el).text();
+
+      // Если в блоке есть текст "Pegas Touristik"
+      if (containerText.includes("Pegas Touristik")) {
+        // Ищем внутри этого блока ключ "USD:"
+        const usdKey = $(el)
+          .find(".key")
+          .filter((index, keyEl) => {
+            return $(keyEl).text().trim() === "USD:";
+          });
+
+        // Берем значение, которое идет сразу после этого ключа
+        usdRate = usdKey.next(".value").text().trim();
+        return false; // Выход из цикла .each
+      }
+    });
+    console.log(`Курс USD (Pegas Touristik): ${usdRate}`);
+    return usdRate;
+  } catch (error) {
+    console.error("Ошибка при запросе:", error.message);
+  }
+}
+
+async function findCurrency() {
+  try {
+    const currency = await getPegasUsdRate();
+
+    await writeToGoogleSheets(new Date(), currency);
 
     // Отправляем уведомление в Telegram
     await sendTelegramNotification(
-      `Данные обновлены\n📅 ${new Date()}\n💱 ${currentText}`
+      `Данные обновлены\n📅 ${new Date()}\n Курс USD ${currency}`
     );
-
-    return { success: true, data: { value: currentText } };
+    return { success: true, data: { value: currency } };
   } catch (error) {
     console.error(error);
     return { success: false, error: error.message };
-  } finally {
-    await browser?.close();
   }
 }
 
